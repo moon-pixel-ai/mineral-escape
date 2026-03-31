@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>광물 잠입 방탈출 웹앱</title>
+  <style>
+    :root{
+      --bg:#020617;--panel:#0f172a;--panel2:#111827;--line:#334155;--txt:#e2e8f0;--muted:#94a3b8;
+      --cyan:#22d3ee;--emerald:#34d399;--rose:#fb7185;--amber:#fbbf24;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,Pretendard,sans-serif;background:#000;color:var(--txt)}
+    body{overflow:hidden}
+    button,input{font:inherit}
+    .app{min-height:100vh;background:linear-gradient(135deg,#0f172a,#111827 45%,#020617)}
+    .topbar,.bottombar{position:fixed;left:0;right:0;z-index:40;background:rgba(2,6,23,.92);backdrop-filter:blur(10px)}
+    .topbar{top:0;border-bottom:1px solid #1e293b}
+    .bottombar{bottom:0;border-top:1px solid #1e293b}
+    .wrap{max-width:1200px;margin:0 auto;padding:12px 16px}
+    .topgrid{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .title{font-size:1.35rem;font-weight:800}
+    .subtitle,.objective,.muted{color:var(--muted)}
+    .subtitle{font-size:.92rem}
+    .objective{font-size:.84rem;margin-top:4px}
+    .hud-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .badge,.btn,.pill,.slot,.log,.panel,.modal-card,.note-card,.ibox,.smallbtn,.answer-input,.inventory-item,.doorbox,.sign,.collector,.rock,.sample{border:1px solid #334155}
+    .badge,.pill{padding:8px 12px;border-radius:999px;background:#111827;font-size:.85rem}
+    .btn,.smallbtn{background:#1e293b;color:var(--txt);border-radius:16px;padding:10px 14px;cursor:pointer}
+    .btn.primary{background:#0f766e;border-color:#155e75}
+    .btn:hover,.smallbtn:hover,.inventory-item:hover,.hotspot:hover,.rock:hover,.sample:hover{filter:brightness(1.08)}
+    .progress{width:180px;height:8px;background:#1e293b;border-radius:999px;overflow:hidden}
+    .progress>div{height:100%;background:var(--cyan)}
+    main{padding:92px 16px 84px;height:100vh}
+    .scene{position:relative;height:100%;max-width:1200px;margin:0 auto;overflow:hidden;border:1px solid #1e293b;border-radius:28px;background:rgba(2,6,23,.45);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+    .scene-tag{position:absolute;left:16px;top:16px;z-index:20;padding:10px 14px;border-radius:18px;background:rgba(2,6,23,.88);border:1px solid #334155}
+    .scene-tag .cap{font-size:.78rem;color:var(--muted)}
+    .hotspot,.far-door,.sample,.rock,.bubble{position:absolute;z-index:10;cursor:pointer}
+    .hotspot{background:transparent;border:none}
+    .caption{position:absolute;left:20px;bottom:20px;z-index:20;max-width:520px;padding:14px 16px;border-radius:22px;background:rgba(245,158,11,.12);border:1px solid rgba(251,191,36,.25);color:#fde68a;font-size:.95rem;line-height:1.6}
+    .corridor-bg{position:absolute;inset:0;background:radial-gradient(circle at top,rgba(59,130,246,.14),transparent 18%),linear-gradient(to bottom,#071225,#0a1630 22%,#08101f 50%,#050913)}
+    .panelbox{position:absolute;left:10.5%;top:17%;width:18%;height:45%;border-radius:26px;border:1px solid rgba(103,232,249,.35);background:linear-gradient(180deg,rgba(8,47,73,.68),rgba(15,23,42,.88))}
+    .commbox{position:absolute;right:11.5%;top:12.5%;width:16%;height:22%;border-radius:999px;border:1px solid rgba(52,211,153,.25);background:radial-gradient(circle at center,rgba(16,185,129,.2),rgba(2,6,23,.8))}
+    .centerdoor{position:absolute;left:50%;top:18%;transform:translateX(-50%);width:17%;height:58%;border-radius:2.8rem 2.8rem .8rem .8rem;border:1px solid rgba(255,255,255,.15);background:linear-gradient(to bottom,rgba(71,85,105,.75),rgba(15,23,42,.95))}
+    .doorinner{position:absolute;left:50%;top:22%;transform:translateX(-50%);width:8.6%;height:20%;border-radius:1.2rem;background:rgba(30,41,59,.55);border:1px solid rgba(255,255,255,.08)}
+    .doorknob{position:absolute;left:55.8%;top:50%;width:14px;height:14px;border-radius:50%;background:#fde047}
+    .doorlabel{position:absolute;left:50%;top:65%;transform:translateX(-50%);text-align:center}
+    .doorlock{margin-top:8px;display:inline-block;padding:8px 14px;border-radius:999px;background:rgba(244,63,94,.18);border:1px solid rgba(244,63,94,.25);font-size:.9rem}
+    .lab-bg{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(71,85,105,.35),rgba(15,23,42,.92))}
+    .lab-bg::after{content:"";position:absolute;left:0;right:0;bottom:0;height:22%;background:rgba(2,6,23,.92)}
+    .table{position:absolute;left:10%;right:10%;bottom:18%;height:18%;border-radius:28px;background:rgba(30,41,59,.72);border:1px solid rgba(148,163,184,.5)}
+    .wide-table{position:absolute;left:10%;width:66%;bottom:20%;height:18%;border-radius:28px;background:rgba(30,41,59,.72);border:1px solid rgba(148,163,184,.5)}
+    .doorbox{border-radius:2rem 2rem .75rem .75rem;background:linear-gradient(to bottom,#475569,#0f172a);height:100%;display:flex;align-items:flex-end;justify-content:center;text-align:center;padding:12px}
+    .doorbox small{display:inline-block;margin-top:6px;padding:5px 10px;border-radius:999px;background:rgba(244,63,94,.18);color:#fecdd3}
+    .panel{position:absolute;top:14%;right:16px;z-index:20;width:340px;max-height:72%;overflow:auto;border-radius:28px;background:rgba(2,6,23,.9);padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .panel h3{margin:0 0 12px;font-size:1rem}
+    .row-between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .ibox{padding:12px;border-radius:18px;background:rgba(15,23,42,.72);font-size:.92rem;color:#cbd5e1;line-height:1.55}
+    .ibox + .ibox{margin-top:8px}
+    .answer-input{width:100%;padding:14px 16px;border-radius:18px;background:rgba(2,6,23,.9);color:#fff;margin-top:12px}
+    .feedback{margin-top:12px;padding:12px;border-radius:18px;font-size:.92rem}
+    .ok{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.2);color:#a7f3d0}
+    .bad{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.2);color:#fecdd3}
+    .minbtn{position:absolute;right:16px;top:14%;z-index:20}
+    .sample,.rock{width:12%;height:12%;border:none;background:none}
+    .sample > div,.rock > div{width:100%;height:100%;border-radius:1.75rem;position:relative;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10%;font-weight:800;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+    .s-dark{background:linear-gradient(135deg,#3f3f46,#111827,#000)}
+    .s-calcite{background:linear-gradient(135deg,#78716c,#44403c,#0c0a09)}
+    .s-quartz{background:linear-gradient(135deg,#64748b,#334155,#020617)}
+    .s-magnetite{background:linear-gradient(135deg,#475569,#18181b,#000)}
+    .s-diamond{background:linear-gradient(135deg,#71717a,#475569,#000)}
+    .s-light{background:linear-gradient(135deg,#cbd5e1,#64748b,#334155)}
+    .reacted{opacity:.7;box-shadow:inset 0 0 0 2px rgba(52,211,153,.7)}
+    .seen::after{content:"✓";position:absolute;right:-4px;top:-4px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#22c55e;color:#fff;font-size:.8rem}
+    .active-ring{box-shadow:0 0 0 2px var(--cyan), inset 0 0 0 1px rgba(255,255,255,.08)!important}
+    .slots{position:absolute;left:10%;bottom:1.5%;z-index:20;width:66%;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .slot{border-style:dashed;border-color:rgba(34,211,238,.3);background:rgba(2,6,23,.85);border-radius:18px;padding:12px;text-align:center}
+    .slot-label{font-size:.75rem;color:var(--muted);margin-bottom:8px}
+    .slot-btn{width:100%;padding:16px 8px;border-radius:14px;background:#1e293b;color:#fff;border:none;cursor:pointer;font-weight:700;font-size:1.1rem}
+    .slot-empty{padding:16px 8px;border-radius:14px;background:rgba(15,23,42,.8);color:#64748b}
+    .collector{position:absolute;left:50%;top:24%;transform:translateX(-50%);width:18%;height:24%;z-index:10;border-radius:2rem;background:rgba(34,211,238,.08);box-shadow:0 0 40px rgba(34,211,238,.14)}
+    .collector-title{position:absolute;left:12px;right:12px;top:12px;padding:8px 10px;border-radius:14px;text-align:center;background:rgba(2,6,23,.45);color:#cffafe;font-size:.9rem}
+    .collector-bar{position:absolute;left:16px;right:16px;bottom:16px;height:24px;border-radius:999px;background:rgba(2,6,23,.88);overflow:hidden}
+    .collector-bar>div{height:100%;background:rgba(34,211,238,.6)}
+    .collector-count{position:absolute;left:0;right:0;bottom:48px;text-align:center;font-size:.8rem}
+    .bubble{width:32px;height:32px;border-radius:50%;background:rgba(165,243,252,.72);border:1px solid rgba(224,242,254,.5);box-shadow:0 0 20px rgba(103,232,249,.55);cursor:grab}
+    .sign{position:absolute;left:10%;top:18%;z-index:10;width:24%;padding:16px;border-radius:28px;background:rgba(2,6,23,.84)}
+    .vaultbox{position:absolute;left:50%;top:20%;transform:translateX(-50%);z-index:10;width:36%;padding:24px;border-radius:34px;background:rgba(2,6,23,.9)}
+    .code-big{text-align:center;font-size:2rem;letter-spacing:.35em;font-weight:800;color:#a5f3fc;margin-top:4px}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+    .overlay{position:fixed;inset:0;z-index:140;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:16px}
+    .modal-card{width:min(820px,100%);border-radius:32px;background:#020617;box-shadow:0 20px 40px rgba(0,0,0,.45)}
+    .modal-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;border-bottom:1px solid #1e293b;padding:20px 24px}
+    .modal-body{padding:24px}
+    .close{border-radius:16px;background:#0f172a;color:#cbd5e1;padding:10px 12px;cursor:pointer}
+    .inventory-grid,.note-grid{display:grid;gap:12px}
+    .inventory-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .note-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+    .inventory-item{padding:16px;border-radius:24px;background:rgba(15,23,42,.72);cursor:pointer;text-align:left}
+    .inventory-item.active{border-color:var(--cyan);background:rgba(6,182,212,.09)}
+    .iconbox{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:16px;background:#1e293b;margin-right:10px;font-weight:700}
+    .logwrap{display:flex;gap:10px;overflow:auto}
+    .log{min-width:260px;padding:10px 12px;border-radius:18px;background:rgba(15,23,42,.82);font-size:.82rem;color:#cbd5e1}
+    .bubble.dragging{cursor:grabbing}
+    @media (max-width:900px){
+      .progress,.hud-mid,.badge{display:none}
+      .panel{width:min(92vw,340px)}
+      .vaultbox{width:78%}.sign{width:36%}
+    }
+    @media (max-width:700px){
+      .title{font-size:1.1rem}.subtitle{font-size:.8rem}.objective{font-size:.75rem}
+      main{padding-left:8px;padding-right:8px}
+      .scene{border-radius:22px}
+      .panel{left:50%;right:auto;transform:translateX(-50%);width:min(92vw,360px)}
+      .minbtn{right:12px}.sign{position:relative;left:auto;top:auto;width:auto;margin:86px 12px 0}.vaultbox{position:relative;left:auto;top:auto;transform:none;width:auto;margin:12px}
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+const META={
+  intro:{title:"잠입 시작 복도",subtitle:"비밀 지질 연구소 지하 복도",objective:"위조 카드를 선택해 복도 끝 문을 열어라."},
+  analysis:{title:"표본 분석실",subtitle:"조흔색으로 광물 판별",objective:"조흔색을 보고 제시된 광물의 기호를 맞혀라."},
+  physical:{title:"물성 실험실",subtitle:"굳기와 자성",objective:"광물을 서로 긁고 자성을 확인해 올바르게 배열하라."},
+  reaction:{title:"반응 실험실",subtitle:"이산화탄소 포집",objective:"광물과 염산 반응으로 만든 이산화탄소를 포집 장치에 넣어라."},
+  vault:{title:"루덴 코어 보관실",subtitle:"최종 금고 해제",objective:"획득한 3자리 코드와 마지막 2자리 힌트를 이용해 금고를 열어라."}
+};
+const TOOLS=[
+  {id:'fakeCard',label:'위조 카드',desc:'복도 보안문 단말기에 사용'},
+  {id:'streakPlate',label:'조흔판',desc:'광물의 조흔색 확인'},
+  {id:'magnet',label:'소형 자석',desc:'자성 확인'},
+  {id:'acid',label:'염산 드로퍼',desc:'방해석 반응 확인'},
+  {id:'physicalKey',label:'물성 실험실 열쇠',desc:'물성 실험실 문을 여는 열쇠'},
+  {id:'reactionKey',label:'반응 실험실 열쇠',desc:'반응 실험실 문을 여는 열쇠'}
+];
+const ANALYSIS_MINERALS=[
+  {id:'biotite',symbol:'A',mineral:'흑운모',x:'18%',y:'56%',streak:'흰색'},
+  {id:'hematite',symbol:'B',mineral:'적철석',x:'43%',y:'51%',streak:'붉은 갈색'},
+  {id:'magnetiteA',symbol:'C',mineral:'자철석',x:'67%',y:'57%',streak:'검은색'}
+];
+const ANALYSIS_QUESTIONS=[
+  {mineral:'적철석',prompt:'적철석에 해당하는 것의 기호를 찾아 쓰시오.'},
+  {mineral:'자철석',prompt:'자철석에 해당하는 것의 기호를 찾아 쓰시오.'},
+  {mineral:'흑운모',prompt:'흑운모에 해당하는 것의 기호를 찾아 쓰시오.'}
+];
+const PHYSICAL_MINERALS=[
+  {id:'calcite',symbol:'A',mineral:'방해석',x:'14%',y:'60%',hardness:3,magnetic:false,cls:'s-calcite'},
+  {id:'quartz',symbol:'B',mineral:'석영',x:'32%',y:'54%',hardness:7,magnetic:false,cls:'s-quartz'},
+  {id:'magnetite',symbol:'C',mineral:'자철석',x:'50%',y:'58%',hardness:6,magnetic:true,cls:'s-magnetite'},
+  {id:'diamond',symbol:'D',mineral:'금강석',x:'68%',y:'52%',hardness:10,magnetic:false,cls:'s-diamond'}
+];
+const PHYSICAL_RULES=[
+  '1. 금강석은 자철석과 붙어서 배열할 수 없다.',
+  '2. 석영은 홀수번째 자리에 위치해야 한다.',
+  '3. 방해석은 금강석의 오른편에 배치되어야 한다.',
+  '4. 자철석은 가장 마지막에 배열할 것.'
+];
+const REACTION_MINERALS=[
+  {id:'r_calcite_1',mineral:'방해석',x:'14%',y:'60%',cls:'s-light'},
+  {id:'r_quartz',mineral:'석영',x:'28%',y:'52%',cls:'s-dark'},
+  {id:'r_biotite',mineral:'흑운모',x:'66%',y:'57%',cls:'s-dark'},
+  {id:'r_magnetite',mineral:'자철석',x:'78%',y:'49%',cls:'s-dark'},
+  {id:'r_calcite_2',mineral:'방해석',x:'44%',y:'64%',cls:'s-light'},
+  {id:'r_calcite_3',mineral:'방해석',x:'58%',y:'44%',cls:'s-light'}
+];
+const state={
+  room:'intro',tool:null,inventoryOpen:false,notesOpen:false,popup:null,panelOpen:false,commOpen:false,
+  logs:['[본부] 잠입 성공. 목표 광물을 확보하라.','[시스템] 광물의 성질을 이용한 인증 장치가 활성화되어 있다.'],
+  codes:[],owned:['fakeCard','streakPlate','magnet','acid'],introSeen:{panel:false,comm:false},
+  analysisMin:false,analysisSeen:{},analysisAnswer:'',analysisFeedback:'',analysisSolved:false,
+  analysisQuestion: ANALYSIS_QUESTIONS[Math.floor(Math.random()*ANALYSIS_QUESTIONS.length)],
+  physicalMin:false,scratchFirst:null,magnetChecked:[],slots:[null,null,null,null],physicalFeedback:'',physicalSolved:false,
+  bubbles:[],reactionCollected:0,reactionSolved:false,reactedMinerals:[],vaultInput:'',vaultSolved:false
+};
+function addLog(text){state.logs.push(text)}
+function addCode(code){if(!state.codes.includes(code)) state.codes.push(code)}
+function addTool(id){if(!state.owned.includes(id)) state.owned.push(id)}
+function toggleTool(id){state.tool=state.tool===id?null:id}
+function meta(){return META[state.room]}
+function toolLabel(){const t=TOOLS.find(t=>t.id===state.tool); return t?t.label:'없음'}
+function progress(){const arr=[state.introSeen.panel&&state.introSeen.comm,state.analysisSolved,state.physicalSolved,state.reactionSolved,state.vaultSolved];return Math.round(arr.filter(Boolean).length/5*100)}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
+function openPopup(title,body,desc=''){state.popup={title,body,desc}}
+function closeOverlays(){state.inventoryOpen=false;state.notesOpen=false;state.popup=null;state.panelOpen=false;state.commOpen=false}
+function openIntroDoor(){
+  if(state.tool!=='fakeCard'){openPopup('보안문 단말기','인벤토리에서 위조 카드를 선택해야 한다.');return}
+  if(!state.introSeen.panel||!state.introSeen.comm){openPopup('보안문 단말기','안내 패널과 통신 장치를 먼저 확인하면 좋다.');return}
+  addLog('[복도] 위조 카드 인증 성공. 표본 분석실 문이 열렸다.'); state.room='analysis'; render();
+}
+function clickAnalysis(id){
+  const m=ANALYSIS_MINERALS.find(v=>v.id===id); if(!m) return;
+  if(state.tool!=='streakPlate'){openPopup(`${m.symbol} 표본`,'조흔판을 선택해야 조흔색을 확인할 수 있다.'); render(); return}
+  state.analysisSeen[m.id]=true; addLog(`[분석실] ${m.symbol} 표본 조흔색 확인: ${m.streak}`); openPopup(`${m.symbol} 표본`,`조흔판에 긁었을 때 ${m.streak} 가루가 보인다.`); render();
+}
+function submitAnalysis(){
+  const target=ANALYSIS_MINERALS.find(m=>m.mineral===state.analysisQuestion.mineral);
+  if(!target||!Object.keys(state.analysisSeen).length){state.analysisFeedback='조흔판으로 표본을 긁어 본 뒤 답을 써 보자.'; render(); return}
+  if(state.analysisAnswer.trim().toUpperCase()===target.symbol){
+    if(!state.analysisSolved){state.analysisSolved=true; addCode('4'); addTool('physicalKey'); addLog("[분석실] 코드를 획득했습니다. 코드는 '4'입니다. 물성 실험실 열쇠도 획득했습니다."); openPopup('정답 처리 완료',"코드를 획득했습니다. 코드는 '4'입니다. 물성 실험실 열쇠도 획득했습니다.",'표본 분석실 인증 성공');}
+    state.analysisFeedback=`정답이다. ${state.analysisQuestion.mineral}에 해당하는 기호는 ${target.symbol}이다.`;
+  } else state.analysisFeedback='조흔색을 다시 확인하고 기호를 입력해 보자.';
+  render();
+}
+function openPhysicalDoor(){
+  if(!state.analysisSolved) return;
+  if(state.tool!=='physicalKey'){openPopup('물성 실험실 문','인벤토리에서 물성 실험실 열쇠를 선택한 뒤 문을 클릭해야 한다.'); render(); return}
+  state.room='physical'; render();
+}
+function clickPhysical(id){
+  const m=PHYSICAL_MINERALS.find(v=>v.id===id); if(!m) return;
+  if(state.tool==='magnet'){
+    if(!state.magnetChecked.includes(m.id)) state.magnetChecked.push(m.id);
+    openPopup(`${m.symbol} 표본`,m.magnetic?`${m.symbol} 표본은 자석에 붙는다.`:`${m.symbol} 표본은 자석에 붙지 않는다.`); render(); return;
+  }
+  if(!state.scratchFirst){state.scratchFirst=m.id; openPopup(`${m.symbol} 표본 선택`,'이제 다른 광물을 클릭하면 서로 긁기 결과를 확인할 수 있다.'); render(); return;}
+  if(state.scratchFirst===m.id){state.scratchFirst=null; openPopup(`${m.symbol} 표본 선택 해제`,'선택을 해제했다.'); render(); return;}
+  const first=PHYSICAL_MINERALS.find(v=>v.id===state.scratchFirst); if(!first) return;
+  const a=first.hardness||0,b=m.hardness||0;
+  const body=a>b?`${first.symbol} 표본으로 ${m.symbol} 표본을 긁자 ${m.symbol} 표본이 긁힌다.`:a<b?`${m.symbol} 표본으로 ${first.symbol} 표본을 긁자 ${first.symbol} 표본이 긁힌다.`:`${first.symbol} 표본과 ${m.symbol} 표본은 서로 잘 긁히지 않는다.`;
+  state.scratchFirst=null; openPopup('광물 서로 긁기 결과',body); render();
+}
+function placeInSlot(i,id){const next=state.slots.map(v=>v===id?null:v); next[i]=id; state.slots=next; render();}
+function clearSlot(i){state.slots=state.slots.map((v,idx)=>idx===i?null:v); render();}
+function submitPhysical(){
+  const arranged=state.slots.filter(Boolean); if(arranged.length!==4){state.physicalFeedback='광물 4개를 모두 아래의 배열 칸에 배치한 뒤 제출해 보자.'; openPopup('배열 제출 실패','광물 4개를 모두 아래의 배열 칸에 배치한 뒤 다시 제출해 주세요.','아직 배치가 완성되지 않았습니다'); render(); return}
+  const names=arranged.map(id=>PHYSICAL_MINERALS.find(m=>m.id===id)?.mineral);
+  const qi=names.indexOf('석영'),ci=names.indexOf('방해석'),mi=names.indexOf('자철석'),di=names.indexOf('금강석');
+  const ok=mi===3&&(qi===0||qi===2)&&ci>di&&Math.abs(di-mi)!==1&&state.magnetChecked.includes('magnetite');
+  if(ok){
+    if(!state.physicalSolved){state.physicalSolved=true; addCode('8'); addCode('1'); addTool('reactionKey'); addLog("[물성실] 코드를 획득했습니다. 코드는 '81'입니다. 반응 실험실 열쇠도 획득했습니다.");}
+    state.physicalFeedback='정답이다. 모든 조건을 만족한다.'; openPopup('정답 처리 완료','정답입니다. 코드를 획득했습니다. 코드는 \'81\'입니다. 반응 실험실 열쇠도 획득했습니다. 인벤토리에서 열쇠를 선택한 뒤 뒤쪽 문을 클릭하세요.','물성 실험실 인증 성공');
+  } else {state.physicalFeedback='틀렸습니다. 배열 조건을 다시 확인한 뒤 다시 시도해 보세요.'; openPopup('오답','틀렸습니다. 문제의 4가지 조건과 자철석의 자성 확인 여부를 다시 확인한 뒤 다시 시도해 주세요.','배열 조건 불일치')}
+  render();
+}
+function openReactionDoor(){
+  if(!state.physicalSolved){openPopup('반응 실험실 문','먼저 물성 실험실 문제를 해결해야 한다.'); render(); return}
+  if(state.tool!=='reactionKey'){openPopup('반응 실험실 문','인벤토리에서 반응 실험실 열쇠를 선택한 뒤 문을 클릭해야 한다.'); render(); return}
+  state.room='reaction'; render();
+}
+function clickReactionMineral(id){
+  const m=REACTION_MINERALS.find(v=>v.id===id); if(!m) return;
+  if(state.tool!=='acid'){openPopup('광물 반응','어떤 도구를 사용해야 할 것 같다...'); render(); return}
+  if(m.mineral!=='방해석'){openPopup('광물 반응','아무 변화도 없다.'); render(); return}
+  if(state.reactedMinerals.includes(m.id)){openPopup('광물 반응','이 광물에서는 이미 반응이 끝나 더이상 이산화탄소가 나오지 않는다.'); render(); return}
+  state.reactedMinerals.push(m.id); state.bubbles.push({id:Date.now()+Math.floor(Math.random()*1000),x:m.x,y:m.y}); addLog('[반응실] 방해석에 염산을 떨어뜨리자 거품이 발생했다.'); openPopup('광물 반응','거품이 발생했다. 이산화탄소일지도 모른다... 포집 장치에 넣어 보자.'); render();
+}
+function dropBubble(id){
+  state.bubbles=state.bubbles.filter(b=>b.id!==id); state.reactionCollected += 1;
+  if(state.reactionCollected>=3 && !state.reactionSolved){state.reactionSolved=true; addLog('[반응실] 포집 장치가 가득 찼다. 루덴 코어 보관실로 이동합니다.'); openPopup('포집 완료','포집 장치가 가득 찼다. 마지막 루덴 코어 보관실로 자동 이동한다.','이산화탄소 포집 장치 충전 완료'); render(); setTimeout(()=>{state.room='vault'; render();},700); return;}
+  openPopup('이산화탄소 포집',`거품을 포집 장치에 넣었다. 현재 ${state.reactionCollected}/3`); render();
+}
+function submitVault(){
+  const answer=`${state.codes.join('')}83`;
+  if(state.vaultInput===answer){state.vaultSolved=true; addLog(`[보관실] 금고 해제 성공. 최종 비밀번호 ${answer}`); openPopup('루덴 코어 확보',`금고가 열리며 루덴 코어를 확보했다. 최종 비밀번호는 ${answer}였다.`,'최종 임무 완료');}
+  else openPopup('금고 해제 실패','비밀번호가 틀렸다. 팻말의 ○, ☆ 힌트를 다시 확인해 보자.');
+  render();
+}
+function sceneIntro(){return `
+  <div class="scene-tag"><div><strong>잠입 시작 복도</strong></div><div class="cap">복도 끝의 문과 벽면 장치를 클릭하는 장면형 구역</div></div>
+  <div class="corridor-bg"></div><div class="panelbox"></div><div class="commbox"></div><div class="centerdoor"></div><div class="doorinner"></div><div class="doorknob"></div>
+  <div class="doorlabel"><div style="font-size:1.25rem;font-weight:800">표본 분석실</div><div class="doorlock">잠김</div></div>
+  <button class="hotspot" style="left:10.5%;top:17%;width:18%;height:45%" data-action="open-panel" aria-label="연구소 안내 패널"></button>
+  <button class="hotspot" style="left:72.5%;top:12.5%;width:16%;height:22%;border-radius:999px" data-action="open-comm" aria-label="본부 암호 통신"></button>
+  <button class="hotspot" style="left:41.5%;top:18%;width:17%;height:58%" data-action="intro-door" aria-label="표본 분석실 문"></button>
+  <div class="caption">먼저 <b>인벤토리</b>에서 <b>위조 카드</b>를 선택한 뒤 복도 끝의 문을 클릭해 보자.</div>`}
+function sceneAnalysis(){return `
+  <div class="scene-tag"><div><strong>표본 분석실</strong></div><div class="cap">조흔판을 선택한 뒤 표본을 클릭해 조흔색만 확인</div></div>
+  <div class="lab-bg"></div><div class="table"></div>
+  <div class="far-door" data-action="open-physical-door" style="left:40%;top:14%;width:14%;height:34%"><div class="doorbox"> <div><div>물성 실험실</div><small>잠김</small></div></div></div>
+  ${ANALYSIS_MINERALS.map(m=>`<button class="sample" data-action="analysis-mineral" data-id="${m.id}" style="left:${m.x};top:${m.y}"><div class="s-dark ${state.analysisAnswer.toUpperCase()===m.symbol?'active-ring':''} ${state.analysisSeen[m.id]?'seen':''}"><span>${m.symbol}</span></div></button>`).join('')}
+  ${state.analysisMin?`<div class="minbtn"><button class="smallbtn" data-action="toggle-analysis-min">문제창 열기</button></div>`:`<div class="panel"><div class="row-between"><h3>표본 분석 문제</h3><button class="smallbtn" data-action="toggle-analysis-min">최소화</button></div><div class="muted" style="font-size:.9rem;margin-bottom:10px">문제를 보고 기호를 입력해 보자.</div><p style="font-size:.94rem;color:#cbd5e1">${state.analysisQuestion.prompt}</p><div class="ibox">표본의 겉모습은 모두 검은색 계열이라, 조흔색을 확인해야만 구별할 수 있다.</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px">${ANALYSIS_MINERALS.map(m=>`<div class="ibox" style="text-align:center;padding:10px 8px">${m.symbol}</div>`).join('')}</div><input class="answer-input" maxlength="1" value="${escapeHtml(state.analysisAnswer)}" data-bind="analysisAnswer" placeholder="기호 입력"><button class="btn primary" style="width:100%;margin-top:12px" data-action="submit-analysis">답 제출</button>${state.analysisFeedback?`<div class="feedback ${state.analysisSolved?'ok':'bad'}">${state.analysisFeedback}</div>`:''}${state.analysisSolved?`<div class="ibox" style="margin-top:12px">코드와 물성 실험실 열쇠를 획득했다. 문은 여전히 잠겨 있다. 인벤토리에서 열쇠를 선택한 뒤 뒤쪽 문을 클릭하자.</div>`:''}</div>`}`}
+`}
+function scenePhysical(){return `
+  <div class="scene-tag"><div><strong>물성 실험실</strong></div><div class="cap">광물끼리 서로 긁어 보며 굳기를 비교하고, 배열</div></div>
+  <div class="lab-bg"></div><div class="wide-table"></div>
+  <div style="position:absolute;left:16px;top:80px;z-index:20;padding:12px 16px;border-radius:18px;background:rgba(2,6,23,.82);border:1px solid #334155;font-size:.9rem">금강석 · 방해석 · 석영 · 자철석</div>
+  <div class="far-door" data-action="open-reaction-door" style="left:42%;top:12%;width:14%;height:32%"><div class="doorbox"><div><div>반응 실험실</div><small>잠김</small></div></div></div>
+  ${PHYSICAL_MINERALS.map(m=>`<button draggable="true" class="sample" data-action="physical-mineral" data-id="${m.id}" style="left:${m.x};top:${m.y}"><div class="${m.cls} ${(state.scratchFirst===m.id)?'active-ring':''} ${state.magnetChecked.includes(m.id)?'seen':''}"><span>${m.symbol}</span></div></button>`).join('')}
+  <div class="slots">${[0,1,2,3].map(i=>{const placed=PHYSICAL_MINERALS.find(m=>m.id===state.slots[i]); return `<div class="slot" data-slot="${i}"><div class="slot-label">${i+1}번째 자리</div>${placed?`<button class="slot-btn" data-action="clear-slot" data-slot="${i}">${placed.symbol}</button>`:`<div class="slot-empty">배열 칸</div>`}</div>`}).join('')}</div>
+  ${state.physicalMin?`<div class="minbtn"><button class="smallbtn" data-action="toggle-physical-min">문제창 열기</button></div>`:`<div class="panel"><div class="row-between"><h3>물성 실험 문제</h3><button class="smallbtn" data-action="toggle-physical-min">최소화</button></div><div class="muted" style="font-size:.9rem;margin-bottom:10px">자성과 굳기를 이용해 광물을 배열해 보자.</div>${PHYSICAL_RULES.map(r=>`<div class="ibox">${r}</div>`).join('')}<div class="ibox" style="margin-top:10px">광물과 겹치지 않도록 아래쪽에 분리된 4칸 배열 구역에 드래그해서 놓자. 자석을 선택하면 자성도 확인할 수 있다.</div><div class="ibox" style="margin-top:10px">현재 배열: ${state.slots.map(id=>id?(PHYSICAL_MINERALS.find(m=>m.id===id)?.symbol):'_').join(' ')}</div><button class="btn primary" style="width:100%;margin-top:12px" data-action="submit-physical">배열 정답 제출</button>${state.physicalFeedback?`<div class="feedback ${state.physicalSolved?'ok':'bad'}">${state.physicalFeedback}</div>`:''}${state.physicalSolved?`<div class="ibox" style="margin-top:12px">코드와 반응 실험실 열쇠를 획득했다. 문은 여전히 잠겨 있다. 인벤토리에서 열쇠를 선택한 뒤 뒤쪽 문을 클릭하자.</div>`:''}</div>`}`
+`}
+function sceneReaction(){return `
+  <div class="scene-tag"><div><strong>반응 실험실</strong></div><div class="cap">광물에 염산을 떨어뜨려 이산화탄소를 포집 장치에 넣어라</div></div>
+  <div class="lab-bg"></div>
+  <div style="position:absolute;left:16px;top:80px;z-index:20;max-width:360px;padding:12px 16px;border-radius:18px;background:rgba(2,6,23,.82);border:1px solid #334155;font-size:.9rem">가운데에 이산화탄소 포집 장치가 놓여 있다. 여기저기 널브러진 광물로부터 이산화탄소를 얻어야 할 것 같은데...</div>
+  <div class="collector" id="collector"><div class="collector-title">이산화탄소 포집 장치</div><div class="collector-bar"><div style="width:${state.reactionCollected/3*100}%"></div></div><div class="collector-count">${state.reactionCollected}/3 포집</div></div>
+  ${REACTION_MINERALS.map(m=>`<button class="rock" data-action="reaction-mineral" data-id="${m.id}" style="left:${m.x};top:${m.y}"><div class="${m.cls} ${state.reactedMinerals.includes(m.id)?'reacted':''}">${state.reactedMinerals.includes(m.id)?'<span style="font-size:.72rem">반응 완료</span>':''}</div></button>`).join('')}
+  ${state.bubbles.map(b=>`<div class="bubble" draggable="true" data-action="bubble" data-id="${b.id}" style="left:${b.x};top:${b.y}"></div>`).join('')}
+  ${state.reactionSolved?`<div style="position:absolute;right:16px;top:14%;z-index:20;padding:12px 16px;border-radius:18px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.2);color:#a7f3d0;font-size:.9rem">포집 장치가 가득 차 마지막 보관실로 이동 중이다.</div>`:''}
+`}
+function sceneVault(){const known=state.codes.join(''); return `
+  <div class="scene-tag"><div><strong>루덴 코어 보관실</strong></div><div class="cap">금고 옆 팻말의 식 규칙을 이용해 ○와 ☆를 찾아라</div></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(30,41,59,.45),rgba(2,6,23,.96))"></div>
+  <div class="sign"><div style="margin-bottom:12px;font-size:.9rem;color:#fde68a">팻말의 마지막 두 자리 힌트</div><div class="ibox mono" style="text-align:center;font-size:1.1rem;line-height:1.9;color:#fff"><div>10 + 3 = 1</div><div>3 + 5 = 8</div><div>9 + 9 = 6</div><div style="margin-top:10px;padding-top:10px;border-top:1px solid #334155">10 + 10 = ○</div><div>7 + 8 = ☆</div></div><div class="muted" style="margin-top:10px;font-size:.78rem">규칙을 찾아 ○와 ☆를 구하라.</div></div>
+  <div class="vaultbox"><div style="text-align:center;font-size:1.8rem;font-weight:800">루덴 코어 금고</div><div class="ibox" style="margin-top:14px;text-align:center"><div class="muted" style="font-size:.8rem">이미 획득한 3자리</div><div class="code-big">${known||'___'}</div></div><div class="ibox" style="margin-top:12px;text-align:center;font-size:.8rem">최종 비밀번호는 획득한 3자리 + 힌트로 찾은 ○☆</div><input class="answer-input mono" maxlength="5" value="${escapeHtml(state.vaultInput)}" data-bind="vaultInput" placeholder="5자리 비밀번호 입력" style="text-align:center;font-size:1.6rem;letter-spacing:.35em"><button class="btn primary" style="width:100%;margin-top:14px" data-action="submit-vault">금고 해제</button>${state.vaultSolved?`<div class="feedback ok" style="text-align:center">금고가 열리며 루덴 코어가 모습을 드러냈다.</div>`:''}</div>
+`}
+function renderModal(){
+  const pieces=[];
+  if(state.inventoryOpen){const items=TOOLS.filter(t=>state.owned.includes(t.id)); pieces.push(`<div class="overlay" data-overlay="inventory"><div class="modal-card"><div class="modal-head"><div><div style="font-size:1.2rem;font-weight:800">인벤토리</div><div class="muted" style="font-size:.9rem">도구를 선택한 뒤 장면의 오브젝트를 클릭한다.</div></div><button class="close" data-action="close-inventory">닫기</button></div><div class="modal-body"><div class="inventory-grid">${items.map(item=>`<button class="inventory-item ${state.tool===item.id?'active':''}" data-action="select-tool" data-id="${item.id}"><div style="display:flex;align-items:center"><div class="iconbox">${item.label[0]}</div><div><div style="font-weight:700">${item.label}</div><div class="muted" style="font-size:.8rem">${state.tool===item.id?'현재 선택됨':'클릭하여 선택'}</div></div></div><div style="margin-top:10px;font-size:.9rem;color:#cbd5e1">${item.desc}</div></button>`).join('')}</div><div class="ibox" style="margin-top:14px">현재 선택 도구: ${toolLabel()}</div></div></div></div>`)}
+  if(state.notesOpen){pieces.push(`<div class="overlay"><div class="modal-card"><div class="modal-head"><div><div style="font-size:1.2rem;font-weight:800">임무 노트</div></div><button class="close" data-action="close-notes">닫기</button></div><div class="modal-body"><div class="note-grid"><div class="note-card ibox"><div class="muted" style="margin-bottom:8px">현재 임무</div>${meta().objective}</div><div class="note-card ibox"><div class="muted" style="margin-bottom:8px">획득한 코드</div>${state.codes.length?state.codes.join(' '):'_ _ _'}</div></div></div></div></div>`)}
+  if(state.popup){pieces.push(`<div class="overlay"><div class="modal-card"><div class="modal-head"><div><div style="font-size:1.2rem;font-weight:800">${state.popup.title}</div>${state.popup.desc?`<div class="muted" style="margin-top:4px;font-size:.9rem">${state.popup.desc}</div>`:''}</div><button class="close" data-action="close-popup">닫기</button></div><div class="modal-body"><div style="line-height:1.7;color:#e2e8f0">${state.popup.body}</div></div></div></div>`)}
+  if(state.panelOpen){pieces.push(`<div class="overlay"><div class="modal-card" style="max-width:640px;background:linear-gradient(135deg,rgba(8,47,73,.96),rgba(15,23,42,.98))"><div class="modal-head"><div><div style="font-size:1.2rem;font-weight:800;color:#cffafe">연구소 안내 패널</div><div class="muted" style="font-size:.85rem;letter-spacing:.12em">RESEARCH FACILITY GUIDE</div></div><button class="close" data-action="close-panel">닫기</button></div><div class="modal-body"><div class="ibox" style="line-height:1.9;background:rgba(2,6,23,.35)">표본의 본질을 증명하라.<br>물성으로 거짓을 걸러라.<br>겉모습보다 <b style="color:#a5f3fc">성질</b>이 진실을 말해 준다.</div></div></div></div>`)}
+  if(state.commOpen){pieces.push(`<div class="overlay"><div class="modal-card" style="max-width:760px;background:linear-gradient(180deg,rgba(2,6,23,.98),rgba(3,20,12,.96))"><div class="modal-head"><div><div style="font-size:1.2rem;font-weight:800;color:#bbf7d0">본부 암호 통신</div><div class="muted" style="font-size:.85rem;letter-spacing:.12em">ENCRYPTED TRANSMISSION</div></div><button class="close" data-action="close-comm">닫기</button></div><div class="modal-body mono" style="color:#bbf7d0;line-height:1.9"><div class="ibox" style="background:rgba(0,0,0,.28)">&gt; 조흔판을 사용해라<br>&gt; 자석을 활용해라<br>&gt; 겉모습에 속지 마라</div></div></div></div>`)}
+  return pieces.join('');
+}
+function render(){
+  const app=document.getElementById('app');
+  const m=meta();
+  app.innerHTML=`
+  <div class="topbar"><div class="wrap topgrid"><div style="min-width:0;flex:1"><div class="subtitle">${m.subtitle}</div><div class="title">${m.title}</div><div class="objective">현재 임무: ${m.objective}</div></div><div class="hud-mid"><div class="muted" style="font-size:.78rem;display:flex;justify-content:space-between"><span>진행도</span><span>${progress()}%</span></div><div class="progress"><div style="width:${progress()}%"></div></div><div class="muted" style="font-size:.78rem;margin-top:4px">획득 코드: ${state.codes.length?state.codes.join(' '):'_ _ _'}</div></div><div class="hud-right"><div class="badge">선택 도구: ${toolLabel()}</div><button class="btn" data-action="open-notes">노트</button><button class="btn primary" data-action="open-inventory">인벤토리</button></div></div></div>
+  <main><div class="scene">${state.room==='intro'?sceneIntro():state.room==='analysis'?sceneAnalysis():state.room==='physical'?scenePhysical():state.room==='reaction'?sceneReaction():sceneVault()}</div></main>
+  <div class="bottombar"><div class="wrap"><div class="logwrap"><div class="log" style="min-width:auto;font-weight:700">현장 로그</div>${state.logs.slice(-3).reverse().map(log=>`<div class="log">${escapeHtml(log)}</div>`).join('')}</div></div></div>
+  ${renderModal()}`;
+  bind();
+}
+function bind(){
+  document.querySelectorAll('[data-action]').forEach(el=>{
+    el.addEventListener('click',e=>{
+      const action=el.dataset.action, id=el.dataset.id, slot=el.dataset.slot;
+      if(action==='open-inventory'){state.inventoryOpen=true; render();}
+      else if(action==='open-notes'){state.notesOpen=true; render();}
+      else if(action==='close-inventory'){state.inventoryOpen=false; render();}
+      else if(action==='close-notes'){state.notesOpen=false; render();}
+      else if(action==='close-popup'){state.popup=null; render();}
+      else if(action==='close-panel'){state.panelOpen=false; render();}
+      else if(action==='close-comm'){state.commOpen=false; render();}
+      else if(action==='open-panel'){state.introSeen.panel=true; state.panelOpen=true; render();}
+      else if(action==='open-comm'){state.introSeen.comm=true; state.commOpen=true; render();}
+      else if(action==='intro-door'){openIntroDoor()}
+      else if(action==='select-tool'){toggleTool(id); state.inventoryOpen=false; render();}
+      else if(action==='analysis-mineral'){clickAnalysis(id)}
+      else if(action==='submit-analysis'){submitAnalysis()}
+      else if(action==='open-physical-door'){openPhysicalDoor()}
+      else if(action==='toggle-analysis-min'){state.analysisMin=!state.analysisMin; render();}
+      else if(action==='physical-mineral'){clickPhysical(id)}
+      else if(action==='toggle-physical-min'){state.physicalMin=!state.physicalMin; render();}
+      else if(action==='submit-physical'){submitPhysical()}
+      else if(action==='clear-slot'){clearSlot(Number(slot))}
+      else if(action==='open-reaction-door'){openReactionDoor()}
+      else if(action==='reaction-mineral'){clickReactionMineral(id)}
+      else if(action==='submit-vault'){submitVault()}
+    });
+  });
+  document.querySelectorAll('[data-bind="analysisAnswer"]').forEach(el=>el.addEventListener('input',e=>{state.analysisAnswer=e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,1)}));
+  document.querySelectorAll('[data-bind="vaultInput"]').forEach(el=>el.addEventListener('input',e=>{state.vaultInput=e.target.value.replace(/[^0-9]/g,'').slice(0,5)}));
+  document.querySelectorAll('.sample[draggable="true"]').forEach(el=>{
+    el.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',el.dataset.id)});
+  });
+  document.querySelectorAll('.slot').forEach(el=>{
+    el.addEventListener('dragover',e=>e.preventDefault());
+    el.addEventListener('drop',e=>{e.preventDefault(); const id=e.dataTransfer.getData('text/plain'); if(id) placeInSlot(Number(el.dataset.slot),id)});
+  });
+  document.querySelectorAll('.bubble[draggable="true"]').forEach(el=>{
+    el.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',el.dataset.id); el.classList.add('dragging')});
+    el.addEventListener('dragend',()=>el.classList.remove('dragging'));
+  });
+  const collector=document.getElementById('collector');
+  if(collector){collector.addEventListener('dragover',e=>e.preventDefault()); collector.addEventListener('drop',e=>{e.preventDefault(); const id=Number(e.dataTransfer.getData('text/plain')); if(id) dropBubble(id);});}
+}
+render();
+</script>
+</body>
+</html>
